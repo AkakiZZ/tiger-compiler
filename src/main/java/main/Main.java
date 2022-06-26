@@ -36,23 +36,25 @@ public class Main {
             exit(1);
         }
 
-        String inputFilePath = cmd.getOptionValue("r");
+        String tigerFilePath = cmd.getOptionValue("i");
 
-        String extension = inputFilePath.substring(inputFilePath.lastIndexOf('.'));
+        String extension = tigerFilePath.substring(tigerFilePath.lastIndexOf('.'));
 
-        String mipsFile = inputFilePath.replace(extension, ".s");
+        String irFilePath = tigerFilePath.replace(extension, ".ir");
 
-        String cfgFile = inputFilePath.replace(extension, ".cfg.gv");
+        String mipsFile = tigerFilePath.replace(extension, ".s");
 
-        String livenessFile = inputFilePath.replace(extension, ".liveness");
+        String cfgFile = tigerFilePath.replace(extension, ".cfg.gv");
 
-        String naiveFile = inputFilePath.replace(extension, ".naive.s");
+        String livenessFile = tigerFilePath.replace(extension, ".liveness");
 
-        String intraBlockFile = inputFilePath.replace(extension, ".ib.s");
+        String naiveFile = tigerFilePath.replace(extension, ".naive.s");
 
-        String briggsFile = inputFilePath.replace(extension, ".briggs.s");
+        String intraBlockFile = tigerFilePath.replace(extension, ".ib.s");
 
-        Parser parser = new Parser(inputFilePath);
+        String briggsFile = tigerFilePath.replace(extension, ".briggs.s");
+
+        Parser parser = new Parser(irFilePath);
 
 
         // default
