@@ -32,7 +32,7 @@ public class Main {
         try {
             cmd = commandLineParser.parse(options, args);
         } catch (ParseException e) {
-            System.err.println(Arrays.toString(args));
+            System.out.println(Arrays.toString(args));
             exit(1);
         }
 
