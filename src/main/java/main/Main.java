@@ -9,6 +9,7 @@ import regalloc.factory.NaiveAllocatorFactory;
 import util.FileGenerator;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import static java.lang.System.exit;
@@ -17,8 +18,8 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
         Options options = new Options();
-        options.addRequiredOption("i", "i", true, "tiger-file");
-        options.addRequiredOption("r", "r", true, "ir-file");
+        options.addOption("i", "i", true, "tiger-file");
+        options.addOption("r", "r", true, "ir-file");
         options.addOption("n", false, "naive-allocator");
         options.addOption("b", false, "intra-block-allocation");
         options.addOption("g", false, "global-allocation");
@@ -31,6 +32,7 @@ public class Main {
         try {
             cmd = commandLineParser.parse(options, args);
         } catch (ParseException e) {
+            System.err.println(Arrays.toString(args));
             exit(1);
         }
 
@@ -44,11 +46,11 @@ public class Main {
 
         String livenessFile = inputFilePath.replace(extension, ".liveness");
 
-        String naiveFile = inputFilePath.replace(extension, "naive.s");
+        String naiveFile = inputFilePath.replace(extension, ".naive.s");
 
-        String intraBlockFile = inputFilePath.replace(extension, "ib.s");
+        String intraBlockFile = inputFilePath.replace(extension, ".ib.s");
 
-        String briggsFile = inputFilePath.replace(extension, "briggs.s");
+        String briggsFile = inputFilePath.replace(extension, ".briggs.s");
 
         Parser parser = new Parser(inputFilePath);
 
@@ -72,12 +74,14 @@ public class Main {
         }
 
         if (cmd.hasOption("mips")) {
+            /*
             CodeGenerator naiveAllocationGenerator = new CodeGenerator(parser, new NaiveAllocatorFactory());
             CodeGenerator intraBlockAllocationGenerator = new CodeGenerator(parser, new IntraBlockAllocatorFactory());
             CodeGenerator globalAllocationGenerator = new CodeGenerator(parser, new GlobalAllocatorFactory());
             FileGenerator.generateMipsFile(naiveFile, naiveAllocationGenerator.generateMips());
             FileGenerator.generateMipsFile(intraBlockFile, intraBlockAllocationGenerator.generateMips());
             FileGenerator.generateMipsFile(briggsFile, globalAllocationGenerator.generateMips());
+            */
         }
 
         if (cmd.hasOption("cfg")) {

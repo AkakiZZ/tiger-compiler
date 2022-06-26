@@ -359,7 +359,6 @@ public class CodeGenerator {
                     String.valueOf(memoryTable.getSavedRegisterOffset(registerName)),
                     SP_REGISTER));
         }
-        System.out.println(irInstruction);
         if (arguments.size() != 0) {
             instructions.addAll(loadVariableInRegister(arguments.get(0), RETURN_REGISTER, memoryTable));
         }
