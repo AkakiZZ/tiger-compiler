@@ -40,7 +40,7 @@ public class Main {
 
         String extension = tigerFilePath.substring(tigerFilePath.lastIndexOf('.'));
 
-        String irFilePath = tigerFilePath.replace(extension, ".ir");
+        String irFilePath = tigerFilePath.replace(extension, ".ir").replace("tiger", "ir");
 
         String mipsFile = tigerFilePath.replace(extension, ".s");
 
