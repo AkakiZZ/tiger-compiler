@@ -81,8 +81,8 @@ public class CodeGenerator {
         put("brleq", "c.lt.s");
         // not supported
         put("brneq", "c.eq.s");
-        put("brgt", "c.lt.s");
-        put("brgeq", "c.le.s");
+        put("brgt", "c.le.s");
+        put("brgeq", "c.lt.s");
     }};
 
     private final static Set<String> NotSupportedIrBranchesForFloats = new HashSet<>(List.of("brneq", "brgt", "brgeq"));
@@ -121,7 +121,6 @@ public class CodeGenerator {
     }
 
     private List<String> generateInitSegment() {
-        // TODO float support
         List<String> instructions = new ArrayList<>();
         instructions.add(".data");
         staticVars = new HashSet<>(parser.getStaticVariables());
