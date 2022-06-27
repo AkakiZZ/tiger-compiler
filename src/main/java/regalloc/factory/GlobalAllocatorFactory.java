@@ -9,7 +9,7 @@ import java.util.Set;
 
 public class GlobalAllocatorFactory implements AllocatorFactory{
     @Override
-    public Allocator create(FunctionData functionData, Map<String, Integer> staticArrays, Set<String> staticVariables) {
+    public Allocator create(FunctionData functionData, Map<String, Integer> staticArrays, Set<String> staticVariables, Set<String> floatVariables) {
         return new GlobalAllocator(functionData, staticArrays, staticVariables);
     }
 }

@@ -9,7 +9,7 @@ import java.util.Set;
 
 public class NaiveAllocatorFactory implements AllocatorFactory {
     @Override
-    public Allocator create(FunctionData functionData, Map<String, Integer> staticArrays, Set<String> staticVariables) {
-        return new NaiveAllocator(functionData, staticArrays, staticVariables);
+    public Allocator create(FunctionData functionData, Map<String, Integer> staticArrays, Set<String> staticVariables, Set<String> floatVariables) {
+        return new NaiveAllocator(functionData, staticArrays, staticVariables, floatVariables);
     }
 }

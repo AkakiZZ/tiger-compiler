@@ -11,6 +11,7 @@ public class MemoryTable {
     private final Map<String, Integer> arrays;
 
     private final Set<String> staticVariables;
+    private final Set<String> floatVariables;
     private final int frameSize;
 
     public MemoryTable(Map<String, Integer> stackVariableOffsets,
@@ -18,12 +19,14 @@ public class MemoryTable {
                        Map<String, String> variableRegisters,
                        Map<String, Integer> arrays,
                        Set<String> staticVariables,
+                       Set<String> floatVariables,
                        int frameSize) {
         this.stackVariableOffsets = stackVariableOffsets;
         this.savedRegisterOffsets = savedRegisterOffsets;
         this.variableRegisters = variableRegisters;
         this.staticVariables = staticVariables;
         this.arrays = arrays;
+        this.floatVariables = floatVariables;
         this.frameSize = frameSize;
     }
 
@@ -91,6 +94,10 @@ public class MemoryTable {
         return staticVariables.contains(variableName);
     }
 
+    public boolean isVariableFloat(String variableName) {
+        return floatVariables.contains(variableName);
+    }
+
     @Override
     public String toString() {
         return "MemoryTable{" +
@@ -99,6 +106,7 @@ public class MemoryTable {
                 ", variableRegisters=" + variableRegisters +
                 ", arrays=" + arrays +
                 ", staticVariables=" + staticVariables +
+                ", floatVariables=" + floatVariables +
                 ", frameSize=" + frameSize +
                 '}';
     }
