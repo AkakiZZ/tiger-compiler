@@ -2,13 +2,13 @@ package parser;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class Parser {
     private final List<String> lines;
+    private final Set<String> floatVars;
+    private final List<String> staticVariables;
+    private final HashMap<String, Integer> staticArrays;
     private int currLine;
 
     public Parser(String filePath) throws FileNotFoundException {
@@ -20,37 +20,59 @@ public class Parser {
             lines.add(scanner.nextLine());
         }
         scanner.close();
+        floatVars = new HashSet<>();
+        staticArrays = new HashMap<>();
+        staticVariables = new ArrayList<>();
+        generateStaticVars();
     }
 
-    public List<String> getStaticVars() {
-        List<String> staticVariables = new ArrayList<>();
-        String staticLine = lines.get(1);
-        staticLine = staticLine.substring(staticLine.indexOf(':') + 1);
-        String[] statics = staticLine.split(",");
+    public void generateStaticVars() {
+        String intStaticLine = lines.get(1);
+        String floatStaticLine = lines.get(2);
+        intStaticLine = intStaticLine.substring(intStaticLine.indexOf(':') + 1);
+        String[] intStatics = intStaticLine.split(",");
+        floatStaticLine = floatStaticLine.substring(floatStaticLine.indexOf(':') + 1);
+        String[] floatStatics = floatStaticLine.split(",");
 
-        for (String staticVar : statics) {
+        for (String staticVar : intStatics) {
             staticVar = staticVar.trim();
-            if (!staticVar.isEmpty() && !staticVar.contains("["))
-                staticVariables.add(staticVar.trim());
+            if (!staticVar.isEmpty()) {
+                if (!staticVar.contains("[")) {
+                    staticVariables.add(staticVar.trim());
+                } else {
+                    String staticArrName = staticVar.substring(0, staticVar.indexOf('['));
+                    int size = Integer.parseInt(staticVar.substring(staticVar.indexOf('[') + 1, staticVar.indexOf(']')));
+                    staticArrays.put(staticArrName.trim(), size);
+                }
+            }
         }
-        return staticVariables;
+
+        for (String staticVar : floatStatics) {
+            staticVar = staticVar.trim();
+            if (!staticVar.isEmpty()) {
+                if (!staticVar.contains("[")) {
+                    staticVariables.add(staticVar.trim());
+                    floatVars.add(staticVar);
+                } else {
+                    String staticArrName = staticVar.substring(0, staticVar.indexOf('['));
+                    int size = Integer.parseInt(staticVar.substring(staticVar.indexOf('[') + 1, staticVar.indexOf(']')));
+                    staticArrays.put(staticArrName.trim(), size);
+                    floatVars.add(staticArrName.trim());
+                }
+            }
+        }
     }
 
     public HashMap<String, Integer> getStaticArrays() {
-        HashMap<String, Integer> staticArrays = new HashMap<>();
-        String staticLine = lines.get(1);
-        staticLine = staticLine.substring(staticLine.indexOf(':') + 1);
-        String[] statics = staticLine.split(",");
-
-        for (String staticVar : statics) {
-            staticVar = staticVar.trim();
-            if (staticVar.contains("[")) {
-                String staticArrName = staticVar.substring(0, staticVar.indexOf('['));
-                int size = Integer.parseInt(staticVar.substring(staticVar.indexOf('[') + 1, staticVar.indexOf(']')));
-                staticArrays.put(staticArrName.trim(), size);
-            }
-        }
         return staticArrays;
+    }
+
+    public Set<String> getFloatVariables() {
+        return floatVars;
+    }
+
+    public List<String> getStaticVariables() {
+        return staticVariables;
     }
 
     public List<String> getNextFunction() {

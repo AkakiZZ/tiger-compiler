@@ -15,17 +15,6 @@ import java.util.List;
 import static java.lang.System.exit;
 
 public class Main {
-    static List<String> floatTestFiles = List.of("source/3/tiger/demo_jacobi.tiger",
-            "source/3/tiger/demo_matrix.tiger",
-            "source/3/tiger/demo_motor.tiger",
-            "source/3/tiger/demo_square_root.tiger",
-            "source/3/tiger/demo_slope.tiger",
-            "source/3/tiger/float_assign.tiger",
-            "source/3/tiger/float_math.tiger",
-            "source/3/tiger/float_math_mixed.tiger",
-            "source/3/tiger/float_math_combo.tiger",
-            "source/3/tiger/float_math_power_op.tiger",
-            "source/3/tiger/lib_call_printf.tiger");
 
     public static void main(String[] args) throws IOException {
         Options options = new Options();
@@ -48,8 +37,6 @@ public class Main {
         }
 
         String tigerFilePath = cmd.getOptionValue("i");
-
-        if (floatTestFiles.contains(tigerFilePath)) exit(-1);
 
         String extension = tigerFilePath.substring(tigerFilePath.lastIndexOf('.'));
 
