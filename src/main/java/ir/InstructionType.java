@@ -1,4 +1,4 @@
-package ir_instructions;
+package ir;
 
 public enum InstructionType {
     ASSIGN,

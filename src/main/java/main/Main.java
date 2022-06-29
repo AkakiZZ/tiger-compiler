@@ -1,16 +1,22 @@
 package main;
 
 import codegen.CodeGenerator;
+import ir.FunctionData;
+import ir.ProgramData;
 import org.apache.commons.cli.*;
-import parser.Parser;
+import parser.IrProgramParser;
+import regalloc.allocator.Allocator;
 import regalloc.factory.GlobalAllocatorFactory;
 import regalloc.factory.IntraBlockAllocatorFactory;
 import regalloc.factory.NaiveAllocatorFactory;
+import regalloc.model.MemoryTable;
 import util.FileGenerator;
+import util.FunctionControlFlow;
+import util.Liveness;
 
+import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static java.lang.System.exit;
 
@@ -54,26 +60,49 @@ public class Main {
 
         String briggsFile = tigerFilePath.replace(extension, ".briggs.s");
 
-        Parser parser = new Parser(irFilePath);
+        IrProgramParser parser = new IrProgramParser(irFilePath);
+        ProgramData programData = parser.getProgramData();
 
+        List<FunctionControlFlow> functionControlFlowList = new ArrayList<>();
+        List<Liveness> livenessObjects = new ArrayList<>();
+
+        for (FunctionData data: programData.getFunctions()) {
+            FunctionControlFlow functionControlFlow = FunctionControlFlow.generateFunctionControlFlow(data);
+            functionControlFlowList.add(functionControlFlow);
+        }
+
+        functionControlFlowList = new ArrayList<>();
+        for (FunctionData data: programData.getFunctions()) {
+            FunctionControlFlow functionControlFlow = FunctionControlFlow.generateFunctionControlFlow(data);
+            functionControlFlowList.add(functionControlFlow);
+            HashSet<String> arrs = new HashSet<>(programData.getStaticArrays().keySet());
+            arrs.addAll(data.getArrays().keySet());
+            Liveness liveness = new Liveness(data.getName(),
+                    functionControlFlow.getInstructionFlowGraph(),
+                    data.getInstructions(),
+                    arrs);
+            livenessObjects.add(liveness);
+        }
 
         // default
-        CodeGenerator codeGenerator = new CodeGenerator(parser, new NaiveAllocatorFactory());
+        CodeGenerator codeGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new NaiveAllocatorFactory());
 
         // naive allocation
         if (cmd.hasOption("n")) {
-            codeGenerator = new CodeGenerator(parser, new NaiveAllocatorFactory());
+            codeGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new NaiveAllocatorFactory());
         }
 
         // intra block allocation
         if (cmd.hasOption("b")) {
-            codeGenerator = new CodeGenerator(parser, new IntraBlockAllocatorFactory());
+            codeGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new IntraBlockAllocatorFactory());
         }
 
         // global allocation
         if (cmd.hasOption("g")) {
-            codeGenerator = new CodeGenerator(parser, new GlobalAllocatorFactory());
+            codeGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new GlobalAllocatorFactory());
         }
+
+        FileGenerator.generateMipsFile(mipsFile, codeGenerator.generateMips());
 
         if (cmd.hasOption("mips")) {
             /*
@@ -87,14 +116,13 @@ public class Main {
         }
 
         if (cmd.hasOption("cfg")) {
-
+            FileGenerator.generateCfgFile(cfgFile, functionControlFlowList);
         }
+
 
         if (cmd.hasOption("liveness")) {
-
+            FileGenerator.generateLivenessFile(livenessFile, livenessObjects);
         }
 
-        List<String> instructions = codeGenerator.generateMips();
-        FileGenerator.generateMipsFile(mipsFile, instructions);
     }
 }

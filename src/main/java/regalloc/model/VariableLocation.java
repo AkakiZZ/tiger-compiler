@@ -1,4 +1,4 @@
-package regalloc;
+package regalloc.model;
 
 public class VariableLocation {
     private String location;

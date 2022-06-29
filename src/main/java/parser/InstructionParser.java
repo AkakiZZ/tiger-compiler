@@ -1,11 +1,9 @@
 package parser;
 
-import ir_instructions.IRInstruction;
-import ir_instructions.InstructionType;
+import ir.IRInstruction;
+import ir.InstructionType;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class InstructionParser {
@@ -14,16 +12,63 @@ public class InstructionParser {
         List<String> tokens = tokenizeInstruction(line);
         String operation = tokens.get(0);
         tokens.remove(0);
-        if (isLabel(line)) return new IRInstruction(operation, tokens, InstructionType.LABEL);
-        if (isAssign(line)) return new IRInstruction(operation, tokens, InstructionType.ASSIGN);
-        if (isCallOp(line)) return new IRInstruction(operation, tokens, InstructionType.CALL);
-        if (isCallrOp(line)) return new IRInstruction(operation, tokens, InstructionType.CALLR);
-        if (isReturn(line)) return new IRInstruction(operation, tokens, InstructionType.RETURN);
-        if (isArithmeticOp(line)) return new IRInstruction(operation, tokens, InstructionType.ARITHMETIC);
-        if (isBranchOp(line)) return new IRInstruction(operation, tokens, InstructionType.BRANCH);
-        if (isGoto(line)) return new IRInstruction(operation, tokens, InstructionType.GOTO);
-        if (isArrayStore(line)) return new IRInstruction(operation, tokens, InstructionType.ARRAY_STORE);
-        if (isArrayLoad(line)) return new IRInstruction(operation, tokens, InstructionType.ARRAY_LOAD);
+        List<String> arguments = new ArrayList<>(tokens);
+        Set<String> definedVariables = new HashSet<>();
+        Set<String> usedVariables = new HashSet<>();
+        if (isLabel(line)) {
+            return new IRInstruction(line, operation, arguments, InstructionType.LABEL, definedVariables, usedVariables);
+        }
+        if (isAssign(line)) {
+            if (tokens.size() == 2) {
+                definedVariables.add(tokens.get(0));
+                if (isVar(tokens.get(1)))
+                    usedVariables.add(tokens.get(1));
+            }
+            return new IRInstruction(line, operation, arguments, InstructionType.ASSIGN, definedVariables, usedVariables);
+        }
+        if (isCallOp(line)) {
+            tokens.remove(0);
+            usedVariables.addAll(tokens);
+            return new IRInstruction(line, operation, arguments, InstructionType.CALL, definedVariables, usedVariables);
+        }
+        if (isCallrOp(line)) {
+            definedVariables.add(tokens.get(0));
+            tokens.remove(0);
+            tokens.remove(0);
+            usedVariables.addAll(tokens.stream().filter(this::isVar).toList());
+            return new IRInstruction(line, operation, arguments, InstructionType.CALLR, definedVariables, usedVariables);
+        }
+        if (isReturn(line)) {
+            usedVariables.addAll(tokens.stream().filter(this::isVar).toList());
+            return new IRInstruction(line, operation, arguments, InstructionType.RETURN, definedVariables, usedVariables);
+        }
+        if (isArithmeticOp(line)) {
+            if (isVar(tokens.get(0)))
+                usedVariables.add(tokens.get(0));
+            if (isVar(tokens.get(1)))
+                usedVariables.add(tokens.get(1));
+            definedVariables.add(tokens.get(2));
+            return new IRInstruction(line, operation, arguments, InstructionType.ARITHMETIC, definedVariables, usedVariables);
+        }
+        if (isBranchOp(line)) {
+            if (isVar(tokens.get(0)))
+                usedVariables.add(tokens.get(0));
+            if (isVar(tokens.get(1)))
+                usedVariables.add(tokens.get(1));
+            return new IRInstruction(line, operation, arguments, InstructionType.BRANCH, definedVariables, usedVariables);
+        }
+        if (isGoto(line)) {
+            return new IRInstruction(line, operation, arguments, InstructionType.GOTO, definedVariables, usedVariables);
+        }
+        if (isArrayStore(line)) {
+            if (isVar(tokens.get(1)))
+                usedVariables.add(tokens.get(2));
+            return new IRInstruction(line, operation, arguments, InstructionType.ARRAY_STORE, definedVariables, usedVariables);
+        }
+        if (isArrayLoad(line)) {
+            definedVariables.add(tokens.get(0));
+            return new IRInstruction(line, operation, arguments, InstructionType.ARRAY_LOAD, definedVariables, usedVariables);
+        }
         return null;
     }
 
@@ -83,5 +128,9 @@ public class InstructionParser {
         instruction = instruction.trim();
         return Arrays.stream(instruction.split(", "))
                 .map(x -> x.replace(",", "").trim()).filter(x -> !x.equals("")).collect(Collectors.toList());
+    }
+
+    private boolean isVar(String var) {
+        return !Character.isDigit(var.charAt(0));
     }
 }

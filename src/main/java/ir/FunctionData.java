@@ -1,21 +1,24 @@
-package regalloc;
-
-import ir_instructions.IRInstruction;
+package ir;
 
 import java.util.List;
+import java.util.Map;
 
 public class FunctionData {
+    private final String name;
     private final List<String> localIntVariables;
     private final List<String> localFloatVariables;
     private final List<String> parameters;
+    private final Map<String, Integer> arrays;
     private final List<Boolean> isParameterFlotList;
 
     private final List<IRInstruction> IRInstructions;
 
-    public FunctionData(List<String> localIntVariables, List<String> localFloatVariables, List<String> parameters, List<Boolean> isParameterFlotList, List<IRInstruction> IRInstructions) {
+    public FunctionData(String name, List<String> localIntVariables, List<String> localFloatVariables, List<String> parameters, Map<String, Integer> arrays, List<Boolean> isParameterFlotList, List<IRInstruction> IRInstructions) {
+        this.name = name;
         this.localIntVariables = localIntVariables;
         this.localFloatVariables = localFloatVariables;
         this.parameters = parameters;
+        this.arrays = arrays;
         this.isParameterFlotList = isParameterFlotList;
         this.IRInstructions = IRInstructions;
     }
@@ -38,6 +41,14 @@ public class FunctionData {
 
     public List<IRInstruction> getInstructions() {
         return IRInstructions;
+    }
+
+    public Map<String, Integer> getArrays() {
+        return arrays;
+    }
+
+    public String getName() {
+        return name;
     }
 
     @Override

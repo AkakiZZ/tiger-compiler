@@ -1,9 +1,11 @@
 package regalloc.allocator;
 
-import regalloc.FunctionData;
-import regalloc.MemoryTable;
+import ir.FunctionData;
+import regalloc.model.MemoryTable;
+import util.BasicBlock;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -20,6 +22,11 @@ public class GlobalAllocator implements Allocator {
 
     @Override
     public MemoryTable allocate() {
+        return null;
+    }
+
+    @Override
+    public List<String> reallocate(BasicBlock currBasicBlock, MemoryTable memoryTable) {
         return null;
     }
 }

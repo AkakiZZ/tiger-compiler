@@ -1,22 +1,23 @@
 package codegen;
 
-import ir_instructions.IRInstruction;
-import ir_instructions.InstructionType;
-import parser.FunctionParser;
-import parser.Parser;
-import regalloc.FunctionData;
-import regalloc.MemoryTable;
+import ir.IRInstruction;
+import ir.InstructionType;
+import ir.ProgramData;
+import ir.FunctionData;
+import regalloc.model.MemoryTable;
 import regalloc.allocator.Allocator;
 import regalloc.factory.AllocatorFactory;
+import util.BasicBlock;
+import util.FunctionControlFlow;
+import util.Liveness;
 
 import java.util.*;
 
 public class CodeGenerator {
-    private final static List<String> mustSaveIntegerRegisters = List.of("$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7", "$ra");
     private final static List<String> tempIntegerRegisters = List.of("$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7");
     private final static List<String> argumentIntegerRegisters = List.of("$a0", "$a1", "$a2", "$a3");
 
-    private final static List<String> mustSaveFloatRegisters = List.of("$s20", "$s22", "$s24", "$s26", "$s28", "$s30", "$s32");
+    private final static List<String> mustSaveFloatRegisters = List.of("$f20", "$f22", "$f24", "$f26", "$f28", "$f30", "$f32");
     private final static List<String> tempFloatRegisters = List.of("$f4", "$f6", "$f8", "$f10", "$f14", "$f16");
     private final static List<String> argumentFloatRegisters = List.of("$f12", "$f14");
 
@@ -94,27 +95,28 @@ public class CodeGenerator {
         put("exit", "_lexit");
     }};
 
-    private Set<String> staticVars;
-    private Map<String, Integer> staticArrays;
-    private Set<String> floats;
-    private final Parser parser;
+    private final ProgramData programData;
+    private final List<FunctionControlFlow> functionControlFlowList;
+    private final List<Liveness> livenessObjects;
     private final AllocatorFactory allocatorFactory;
+    private final Set<String> writtenLabels;
 
-    public CodeGenerator(Parser parser, AllocatorFactory allocatorFactory) {
-        this.parser = parser;
+    public CodeGenerator(ProgramData programData, List<FunctionControlFlow> functionControlFlowList, List<Liveness> livenessObjects, AllocatorFactory allocatorFactory) {
+        this.programData = programData;
+        this.functionControlFlowList = functionControlFlowList;
+        this.livenessObjects = livenessObjects;
         this.allocatorFactory = allocatorFactory;
+        this.writtenLabels = new HashSet<>();
     }
 
     public List<String> generateMips() {
         List<String> instructions = generateInitSegment();
-        while (true) {
-            List<String> functionLines = parser.getNextFunction();
-            if (functionLines == null) break;
-            FunctionParser functionParser = new FunctionParser(functionLines);
-            FunctionData data = functionParser.getFunctionData();
-            Allocator allocator = allocatorFactory.create(data, staticArrays, staticVars, floats);
-            MemoryTable memoryTable = allocator.allocate();
-            instructions.addAll(generateFunction(memoryTable, data.getInstructions()));
+        List<FunctionData> functionDataList = programData.getFunctions();
+        int i = 0;
+        for (FunctionData data: functionDataList) {
+            Allocator allocator = allocatorFactory.create(data, programData.getStaticArrays(), programData.getStaticVariables(), programData.getFloatVars());
+            instructions.addAll(generateFunction(allocator, functionControlFlowList.get(i).getBasicBlocks()));
+            i++;
         }
         instructions.addAll(generateStandardFunctions());
         return instructions;
@@ -123,9 +125,8 @@ public class CodeGenerator {
     private List<String> generateInitSegment() {
         List<String> instructions = new ArrayList<>();
         instructions.add(".data");
-        staticVars = new HashSet<>(parser.getStaticVariables());
-        staticArrays = parser.getStaticArrays();
-        floats = parser.getFloatVariables();
+        Set<String> staticVars = programData.getStaticVariables();
+        Map<String, Integer> staticArrays = programData.getStaticArrays();
         for (String var : staticVars) {
             instructions.add(generateStaticVariableInstruction(var, 4));
         }
@@ -139,34 +140,118 @@ public class CodeGenerator {
         return instructions;
     }
 
-    private List<String> generateFunction(MemoryTable memoryTable, List<IRInstruction> irInstructions) {
+    private List<String> generateFunction(Allocator allocator, List<BasicBlock> blocks) {
+        MemoryTable memoryTable = allocator.allocate();
         List<String> instructions = new ArrayList<>();
+        String functionName = blocks.get(0).getInstructions().get(0).getOperation();
+
         // write name label
-        instructions.add(irInstructions.get(0).getOperation());
-        irInstructions.remove(0);
+        instructions.add(functionName);
+        writtenLabels.add(functionName);
         //decrement $sp
         instructions.add(generateDecreaseStackPointer(memoryTable.getFrameSize()));
 
-        //save registers
-        for (String registerName : mustSaveIntegerRegisters) {
+        // TODO save registers
+        /*
+        for (String registerName : memoryTable.getSavedRegisters()) {
             instructions.add(generateStoreVariableFromRegisterInstruction(registerName,
                     String.valueOf(memoryTable.getSavedRegisterOffset(registerName)),
-                    SP_REGISTER, false));
+                    SP_REGISTER, (mustSaveFloatRegisters.contains(registerName))));
+        }
+         */
+
+        instructions.add(generateStoreVariableFromRegisterInstruction("$ra",
+                String.valueOf(memoryTable.getSavedRegisterOffset("$ra")),
+                SP_REGISTER, (mustSaveFloatRegisters.contains("$ra"))));
+
+        for (BasicBlock currBasicBlock : blocks) {
+            instructions.addAll(generateBlock(currBasicBlock, memoryTable, allocator));
+            instructions.add("");
+        }
+        return instructions;
+    }
+
+    private List<String> generateBlock(BasicBlock basicBlock, MemoryTable memoryTable, Allocator allocator) {
+        List<String> instructions = new ArrayList<>();
+        List<IRInstruction> irInstructions = basicBlock.getInstructions();
+        List<String> variablesToMove = allocator.reallocate(basicBlock, memoryTable);
+
+        IRInstruction firstInstructionOfBlock = irInstructions.get(0);
+        IRInstruction lastInstructionOfBlock = irInstructions.get(irInstructions.size() - 1);
+
+        if (firstInstructionOfBlock.getInstructionType() == InstructionType.LABEL) {
+            instructions.addAll(generateInstruction(firstInstructionOfBlock, memoryTable, variablesToMove));
+            for (String variableToMove : variablesToMove) {
+                boolean isFloat = memoryTable.isVariableFloat(variableToMove);
+                instructions.addAll(loadNotInRegisterVariable(memoryTable, variableToMove, memoryTable.getVariableRegister(variableToMove), isFloat));
+            }
+        } else {
+            for (String variableToMove : variablesToMove) {
+                boolean isFloat = memoryTable.isVariableFloat(variableToMove);
+                instructions.addAll(loadNotInRegisterVariable(memoryTable, variableToMove, memoryTable.getVariableRegister(variableToMove), isFloat));
+            }
+            instructions.addAll(generateInstruction(firstInstructionOfBlock, memoryTable, variablesToMove));
         }
 
-        for (IRInstruction irInstruction : irInstructions) {
-            if (irInstruction.getInstructionType() == InstructionType.LABEL) instructions.add(irInstruction.getOperation());
-            if (irInstruction.getInstructionType() == InstructionType.ASSIGN) instructions.addAll(generateAssign(irInstruction, memoryTable));
-            if (irInstruction.getInstructionType() == InstructionType.CALL) instructions.addAll(generateCall(irInstruction, memoryTable));
-            if (irInstruction.getInstructionType() == InstructionType.CALLR) instructions.addAll(generateCallR(irInstruction, memoryTable));
-            if (irInstruction.getInstructionType() == InstructionType.RETURN) instructions.addAll(generateReturn(irInstruction, memoryTable));
-            if (irInstruction.getInstructionType() == InstructionType.ARITHMETIC) instructions.addAll(generateArithmetic(irInstruction, memoryTable));
-            if (irInstruction.getInstructionType() == InstructionType.BRANCH) instructions.addAll(generateBranch(irInstruction, memoryTable));
-            if (irInstruction.getInstructionType() == InstructionType.GOTO) instructions.addAll(generateGoto(irInstruction));
-            if (irInstruction.getInstructionType() == InstructionType.ARRAY_STORE) instructions.addAll(generateArrayStore(irInstruction, memoryTable));
-            if (irInstruction.getInstructionType() == InstructionType.ARRAY_LOAD) instructions.addAll(generateArrayLoad(irInstruction, memoryTable));
+        for (int i = 1; i < irInstructions.size() - 1; i++) {
+            instructions.addAll(generateInstruction(irInstructions.get(i), memoryTable, variablesToMove));
         }
 
+        if (lastInstructionOfBlock != firstInstructionOfBlock) {
+
+            if (lastInstructionOfBlock.getInstructionType() == InstructionType.BRANCH
+                    || lastInstructionOfBlock.getInstructionType() == InstructionType.GOTO
+                    || lastInstructionOfBlock.getInstructionType() == InstructionType.RETURN) {
+                for (String variableToMove : variablesToMove) {
+                    boolean isFloat = memoryTable.isVariableFloat(variableToMove);
+                    instructions.addAll(saveNotInRegisterVariable(variableToMove, memoryTable.getVariableRegister(variableToMove), memoryTable, isFloat));
+                }
+                instructions.addAll(generateInstruction(lastInstructionOfBlock, memoryTable, variablesToMove));
+            } else {
+                instructions.addAll(generateInstruction(lastInstructionOfBlock, memoryTable, variablesToMove));
+                for (String variableToMove : variablesToMove) {
+                    boolean isFloat = memoryTable.isVariableFloat(variableToMove);
+                    instructions.addAll(saveNotInRegisterVariable(variableToMove, memoryTable.getVariableRegister(variableToMove), memoryTable, isFloat));
+                }
+            }
+        }
+        return instructions;
+    }
+
+    private List<String> generateInstruction(IRInstruction irInstruction, MemoryTable memoryTable, List<String> variablesToSave) {
+        List<String> instructions = new ArrayList<>();
+        if (irInstruction.getInstructionType() == InstructionType.LABEL
+                && !writtenLabels.contains(irInstruction.getOperation())) {
+            writtenLabels.add(irInstruction.getOperation());
+            instructions.add(irInstruction.getOperation());
+        }
+        if (irInstruction.getInstructionType() == InstructionType.ASSIGN) {
+            instructions.addAll(generateAssign(irInstruction, memoryTable));
+        }
+        if (irInstruction.getInstructionType() == InstructionType.CALL) {
+            instructions.addAll(generateCall(irInstruction, memoryTable, variablesToSave));
+        }
+        if (irInstruction.getInstructionType() == InstructionType.CALLR) {
+            instructions.addAll(generateCallR(irInstruction, memoryTable, variablesToSave));
+        }
+        if (irInstruction.getInstructionType() == InstructionType.RETURN) {
+            instructions.addAll(generateReturn(irInstruction, memoryTable));
+        }
+        if (irInstruction.getInstructionType() == InstructionType.ARITHMETIC) {
+            instructions.addAll(generateArithmetic(irInstruction, memoryTable));
+        }
+        if (irInstruction.getInstructionType() == InstructionType.BRANCH) {
+            instructions.addAll(generateBranch(irInstruction, memoryTable));
+        }
+        if (irInstruction.getInstructionType() == InstructionType.GOTO) {
+            instructions.addAll(generateGoto(irInstruction));
+        }
+        if (irInstruction.getInstructionType() == InstructionType.ARRAY_STORE) {
+            instructions.addAll(generateArrayStore(irInstruction, memoryTable));
+        }
+        if (irInstruction.getInstructionType() == InstructionType.ARRAY_LOAD) {
+            instructions.addAll(generateArrayLoad(irInstruction, memoryTable));
+        }
         return instructions;
     }
 
@@ -188,15 +273,21 @@ public class CodeGenerator {
         if (memoryTable.isVariableInRegister(variableToLoad)) {
             instructions.add(generateRegisterToRegisterMove(register, memoryTable.getVariableRegister(variableToLoad), isFloat));
         } else {
-            if (memoryTable.isVariableStack(variableToLoad)) {
-                int offset = memoryTable.getStackVariableOffset(variableToLoad);
-                instructions.add(generateLoadVariableInRegisterInstruction(register, String.valueOf(offset), SP_REGISTER, isFloat));
-            }
-            if (memoryTable.isVariableStatic(variableToLoad)) {
-                instructions.add(generateLoadVariableInRegisterInstruction(register, variableToLoad, ZERO_REGISTER, isFloat));
-            }
+            instructions.addAll(loadNotInRegisterVariable(memoryTable, variableToLoad, register, isFloat));
         }
 
+        return instructions;
+    }
+
+    private List<String> loadNotInRegisterVariable(MemoryTable memoryTable, String variableToLoad, String register, boolean isFloat) {
+        List<String> instructions = new ArrayList<>();
+        if (memoryTable.isVariableStack(variableToLoad)) {
+            int offset = memoryTable.getStackVariableOffset(variableToLoad);
+            instructions.add(generateLoadVariableInRegisterInstruction(register, String.valueOf(offset), SP_REGISTER, isFloat));
+        }
+        if (memoryTable.isVariableStatic(variableToLoad)) {
+            instructions.add(generateLoadVariableInRegisterInstruction(register, variableToLoad, ZERO_REGISTER, isFloat));
+        }
         return instructions;
     }
 
@@ -219,16 +310,21 @@ public class CodeGenerator {
         if (memoryTable.isVariableInRegister(variableToSave)) {
             instructions.add(generateRegisterToRegisterMove(memoryTable.getVariableRegister(variableToSave), register, isFloat));
         } else {
-
-            if (memoryTable.isVariableStack(variableToSave)) {
-                int offset = memoryTable.getStackVariableOffset(variableToSave);
-                instructions.add(generateStoreVariableFromRegisterInstruction(register, String.valueOf(offset), SP_REGISTER, isFloat));
-            }
-            if (memoryTable.isVariableStatic(variableToSave)) {
-                instructions.add(generateStoreVariableFromRegisterInstruction(register, variableToSave, ZERO_REGISTER, isFloat));
-            }
+            instructions.addAll(saveNotInRegisterVariable(variableToSave, register, memoryTable, isFloat));
         }
 
+        return instructions;
+    }
+
+    private List<String> saveNotInRegisterVariable(String variableToSave, String register, MemoryTable memoryTable, boolean isFloat) {
+        List<String> instructions = new ArrayList<>();
+        if (memoryTable.isVariableStack(variableToSave)) {
+            int offset = memoryTable.getStackVariableOffset(variableToSave);
+            instructions.add(generateStoreVariableFromRegisterInstruction(register, String.valueOf(offset), SP_REGISTER, isFloat));
+        }
+        if (memoryTable.isVariableStatic(variableToSave)) {
+            instructions.add(generateStoreVariableFromRegisterInstruction(register, variableToSave, ZERO_REGISTER, isFloat));
+        }
         return instructions;
     }
 
@@ -375,7 +471,7 @@ public class CodeGenerator {
         instructions.add(generateArithmeticInstruction("mul", addressRegister, addressRegister, multiplierRegister));
     }
 
-    private List<String> generateCall(IRInstruction irInstruction, MemoryTable memoryTable) {
+    private List<String> generateCall(IRInstruction irInstruction, MemoryTable memoryTable, List<String> variablesToSave) {
         List<String> instructions;
         List<String> arguments = irInstruction.getArguments();
 
@@ -395,17 +491,28 @@ public class CodeGenerator {
             instructions.add(generateJalInstruction(libFunctionLabels.get(calleeName)));
 
         } else {
+            instructions = new ArrayList<>();
+            for (String variableToMove : variablesToSave) {
+                boolean isFloat = memoryTable.isVariableFloat(variableToMove);
+                instructions.addAll(saveNotInRegisterVariable(variableToMove, memoryTable.getVariableRegister(variableToMove), memoryTable, isFloat));
+            }
+
             int numParameters = arguments.size() - 1;
-            instructions = callHelper(arguments, memoryTable, numParameters);
+            instructions.addAll(callHelper(arguments, memoryTable, numParameters));
+
             // increment $sp
             instructions.add(generateIncreaseStackPointer( numParameters * 4));
+            for (String variableToMove : variablesToSave) {
+                boolean isFloat = memoryTable.isVariableFloat(variableToMove);
+                instructions.addAll(loadNotInRegisterVariable(memoryTable, variableToMove, memoryTable.getVariableRegister(variableToMove), isFloat));
+            }
         }
 
         return instructions;
 
     }
 
-    private List<String> generateCallR(IRInstruction irInstruction, MemoryTable memoryTable) {
+    private List<String> generateCallR(IRInstruction irInstruction, MemoryTable memoryTable, List<String> variablesToSave) {
         List<String> instructions;
         List<String> arguments = irInstruction.getArguments();
         String varName = irInstruction.getArguments().get(0);
@@ -415,12 +522,22 @@ public class CodeGenerator {
             instructions = new ArrayList<>(loadVariableInRegister(arg, argumentIntegerRegisters.get(0), memoryTable));
             instructions.add(generateJalInstruction(libFunctionLabels.get(calleeName)));
         } else {
+            instructions = new ArrayList<>();
+            for (String variableToMove : variablesToSave) {
+                boolean isFloat = memoryTable.isVariableFloat(variableToMove);
+                instructions.addAll(saveNotInRegisterVariable(variableToMove, memoryTable.getVariableRegister(variableToMove), memoryTable, isFloat));
+            }
+
             arguments.remove(0);
             int numParameters = arguments.size() - 1;
-            instructions = callHelper(arguments, memoryTable, numParameters);
+            instructions.addAll(callHelper(arguments, memoryTable, numParameters));
 
             // increment $sp
             instructions.add(generateIncreaseStackPointer(numParameters * 4));
+            for (String variableToMove : variablesToSave) {
+                boolean isFloat = memoryTable.isVariableFloat(variableToMove);
+                instructions.addAll(loadNotInRegisterVariable(memoryTable, variableToMove, memoryTable.getVariableRegister(variableToMove), isFloat));
+            }
         }
         boolean isRetVariableFloat = memoryTable.isVariableFloat(varName) || isFloatConstant(varName);
         if (isRetVariableFloat)
@@ -455,12 +572,19 @@ public class CodeGenerator {
         List<String> instructions = new ArrayList<>();
         List<String> arguments = irInstruction.getArguments();
 
-        //load saved registers
-        for (String registerName : mustSaveIntegerRegisters) {
+        // TODO load saved registers
+        /*
+        for (String registerName : memoryTable.getSavedRegisters()) {
             instructions.add(generateLoadVariableInRegisterInstruction(registerName,
                     String.valueOf(memoryTable.getSavedRegisterOffset(registerName)),
-                    SP_REGISTER, false));
+                    SP_REGISTER, (mustSaveFloatRegisters.contains(registerName))));
         }
+         */
+
+        instructions.add(generateLoadVariableInRegisterInstruction("$ra",
+                String.valueOf(memoryTable.getSavedRegisterOffset("$ra")),
+                SP_REGISTER, (mustSaveFloatRegisters.contains("$ra"))));
+
         if (arguments.size() != 0) {
             boolean isRetVariableFloat = memoryTable.isVariableFloat(arguments.get(0)) || isFloatConstant(arguments.get(0));
             if (isRetVariableFloat)

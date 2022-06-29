@@ -1,17 +1,23 @@
 package parser;
 
+import ir.FunctionData;
+import ir.IRInstruction;
+import ir.ProgramData;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.*;
 
-public class Parser {
+public class IrProgramParser {
     private final List<String> lines;
     private final Set<String> floatVars;
-    private final List<String> staticVariables;
+    private final Set<String> staticVariables;
     private final HashMap<String, Integer> staticArrays;
+
+    private final ProgramData programData;
     private int currLine;
 
-    public Parser(String filePath) throws FileNotFoundException {
+    public IrProgramParser(String filePath) throws FileNotFoundException {
         lines = new ArrayList<>();
         currLine = 0;
         File file = new File(filePath);
@@ -22,8 +28,9 @@ public class Parser {
         scanner.close();
         floatVars = new HashSet<>();
         staticArrays = new HashMap<>();
-        staticVariables = new ArrayList<>();
+        staticVariables = new HashSet<>();
         generateStaticVars();
+        this.programData = generateProgramData();
     }
 
     public void generateStaticVars() {
@@ -63,19 +70,7 @@ public class Parser {
         }
     }
 
-    public HashMap<String, Integer> getStaticArrays() {
-        return staticArrays;
-    }
-
-    public Set<String> getFloatVariables() {
-        return floatVars;
-    }
-
-    public List<String> getStaticVariables() {
-        return staticVariables;
-    }
-
-    public List<String> getNextFunction() {
+    private List<String> getNextFunction() {
         List<String> functionLines = new ArrayList<>();
         while (currLine < lines.size()) {
             if (lines.get(currLine).startsWith("start_function")) {
@@ -90,5 +85,17 @@ public class Parser {
         return null;
     }
 
+    private ProgramData generateProgramData() {
+        List<FunctionData> functions = new ArrayList<>();
+        while (true) {
+            List<String> irInstructions = getNextFunction();
+            if (irInstructions == null) break;
+            functions.add(new FunctionParser(irInstructions).getFunctionData());
+        }
+        return new ProgramData(staticVariables, staticArrays, floatVars, functions);
+    }
 
+    public ProgramData getProgramData() {
+        return programData;
+    }
 }

@@ -1,15 +1,13 @@
-package regalloc;
+package regalloc.model;
 
 
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class MemoryTable {
     private final Map<String, Integer> stackVariableOffsets;
-    private final Map<String, Integer> savedRegisterOffsets;
-    private final Map<String, String> variableRegisters;
+    private Map<String, Integer> savedRegisterOffsets;
+    private Map<String, String> variableRegisters;
     private final Map<String, Integer> arrays;
-
     private final Set<String> staticVariables;
     private final Set<String> floatVariables;
     private final int frameSize;
@@ -52,6 +50,9 @@ public class MemoryTable {
         return savedRegisterOffsets.get(registerName);
     }
 
+    public List<String> getSavedRegisters() {
+        return new ArrayList<>(savedRegisterOffsets.keySet());
+    }
     /**
      * returns size of an array
      */
@@ -64,6 +65,18 @@ public class MemoryTable {
      */
     public int getFrameSize() {
         return this.frameSize;
+    }
+
+    /**
+     * updates variable registers (used for intra-block allocation)
+     */
+    public void setVariableRegisters(Map<String, String> variableRegisters) {
+        this.variableRegisters = variableRegisters;
+        // TODO update register offsets
+        //String raRegister = "$ra";
+        //int raRegisterOffset = savedRegisterOffsets.get(raRegister);
+        //this.savedRegisterOffsets = new HashMap<>();
+        //this.savedRegisterOffsets.put(raRegister, raRegisterOffset);
     }
 
     /**
@@ -94,6 +107,9 @@ public class MemoryTable {
         return staticVariables.contains(variableName);
     }
 
+    /**
+     * returns whether a variable is a float variable or not
+     */
     public boolean isVariableFloat(String variableName) {
         return floatVariables.contains(variableName);
     }

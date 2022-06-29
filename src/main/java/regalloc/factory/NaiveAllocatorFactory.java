@@ -1,7 +1,7 @@
 package regalloc.factory;
 
 import regalloc.allocator.Allocator;
-import regalloc.FunctionData;
+import ir.FunctionData;
 import regalloc.allocator.NaiveAllocator;
 
 import java.util.Map;

@@ -1,6 +1,6 @@
 package regalloc.factory;
 
-import regalloc.FunctionData;
+import ir.FunctionData;
 import regalloc.allocator.Allocator;
 import regalloc.allocator.GlobalAllocator;
 
