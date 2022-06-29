@@ -105,14 +105,12 @@ public class Main {
         FileGenerator.generateMipsFile(mipsFile, codeGenerator.generateMips());
 
         if (cmd.hasOption("mips")) {
-            /*
-            CodeGenerator naiveAllocationGenerator = new CodeGenerator(parser, new NaiveAllocatorFactory());
-            CodeGenerator intraBlockAllocationGenerator = new CodeGenerator(parser, new IntraBlockAllocatorFactory());
-            CodeGenerator globalAllocationGenerator = new CodeGenerator(parser, new GlobalAllocatorFactory());
+            CodeGenerator naiveAllocationGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new NaiveAllocatorFactory());
+            CodeGenerator intraBlockAllocationGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new IntraBlockAllocatorFactory());
+            CodeGenerator globalAllocationGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new GlobalAllocatorFactory());
             FileGenerator.generateMipsFile(naiveFile, naiveAllocationGenerator.generateMips());
             FileGenerator.generateMipsFile(intraBlockFile, intraBlockAllocationGenerator.generateMips());
             FileGenerator.generateMipsFile(briggsFile, globalAllocationGenerator.generateMips());
-            */
         }
 
         if (cmd.hasOption("cfg")) {
