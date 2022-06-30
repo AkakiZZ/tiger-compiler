@@ -5,7 +5,7 @@ import java.util.*;
 
 public class MemoryTable {
     private final Map<String, Integer> stackVariableOffsets;
-    private Map<String, Integer> savedRegisterOffsets;
+    private final Map<String, Integer> savedRegisterOffsets;
     private Map<String, String> variableRegisters;
     private final Map<String, Integer> arrays;
     private final Set<String> staticVariables;
@@ -50,9 +50,6 @@ public class MemoryTable {
         return savedRegisterOffsets.get(registerName);
     }
 
-    public List<String> getSavedRegisters() {
-        return new ArrayList<>(savedRegisterOffsets.keySet());
-    }
     /**
      * returns size of an array
      */
@@ -72,11 +69,6 @@ public class MemoryTable {
      */
     public void setVariableRegisters(Map<String, String> variableRegisters) {
         this.variableRegisters = variableRegisters;
-        // TODO update register offsets
-        //String raRegister = "$ra";
-        //int raRegisterOffset = savedRegisterOffsets.get(raRegister);
-        //this.savedRegisterOffsets = new HashMap<>();
-        //this.savedRegisterOffsets.put(raRegister, raRegisterOffset);
     }
 
     /**

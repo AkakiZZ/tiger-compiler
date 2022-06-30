@@ -146,15 +146,6 @@ public class CodeGenerator {
         //decrement $sp
         instructions.add(generateDecreaseStackPointer(memoryTable.getFrameSize()));
 
-        // TODO save registers
-        /*
-        for (String registerName : memoryTable.getSavedRegisters()) {
-            instructions.add(generateStoreVariableFromRegisterInstruction(registerName,
-                    String.valueOf(memoryTable.getSavedRegisterOffset(registerName)),
-                    SP_REGISTER, (mustSaveFloatRegisters.contains(registerName))));
-        }
-         */
-
         instructions.add(generateStoreVariableFromRegisterInstruction("$ra",
                 String.valueOf(memoryTable.getSavedRegisterOffset("$ra")),
                 SP_REGISTER, (mustSaveFloatRegisters.contains("$ra"))));
@@ -566,15 +557,6 @@ public class CodeGenerator {
     private List<String> generateReturn(IRInstruction irInstruction, MemoryTable memoryTable) {
         List<String> instructions = new ArrayList<>();
         List<String> arguments = irInstruction.getArguments();
-
-        // TODO load saved registers
-        /*
-        for (String registerName : memoryTable.getSavedRegisters()) {
-            instructions.add(generateLoadVariableInRegisterInstruction(registerName,
-                    String.valueOf(memoryTable.getSavedRegisterOffset(registerName)),
-                    SP_REGISTER, (mustSaveFloatRegisters.contains(registerName))));
-        }
-         */
 
         instructions.add(generateLoadVariableInRegisterInstruction("$ra",
                 String.valueOf(memoryTable.getSavedRegisterOffset("$ra")),

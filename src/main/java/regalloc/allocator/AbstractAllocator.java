@@ -10,8 +10,6 @@ public abstract class AbstractAllocator implements Allocator {
     protected final Set<String> staticVariables;
     protected final Map<String, Integer> arrays;
     protected final Set<String> floatVariables;
-    protected static final List<String> SHOULD_SAVE_REGISTER_NAMES =
-            List.of("$ra", "$f20", "$f22", "$f24", "$f26", "$f28", "$f30", "$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7");
 
     public AbstractAllocator(FunctionData functionData, Map<String, Integer> staticArrays, Set<String> staticVariables, Set<String> floatVariables) {
         this.functionData = functionData;
@@ -48,13 +46,6 @@ public abstract class AbstractAllocator implements Allocator {
 
         savedRegisterOffsets.put("$ra", offset);
         offset += 4;
-
-        /*
-        for (String register : SHOULD_SAVE_REGISTER_NAMES) {
-            savedRegisterOffsets.put(register, offset);
-            offset += 4;
-        }
-         */
 
         offset = allocateVars(parameterList, stackVariableOffsets, offset);
 

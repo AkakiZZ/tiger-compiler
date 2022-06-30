@@ -12,10 +12,7 @@ import util.FunctionControlFlow;
 import util.Liveness;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 import static java.lang.System.exit;
 
@@ -98,7 +95,6 @@ public class Main {
 
         // global allocation
         if (cmd.hasOption("g")) {
-            //codeGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new GlobalAllocatorFactory());
             // use this for now
             codeGenerator = new CodeGenerator(new ProgramData(programData), functionControlFlowList, livenessObjects, new IntraBlockAllocatorFactory());
         }
