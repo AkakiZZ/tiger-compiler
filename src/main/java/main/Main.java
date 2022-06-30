@@ -5,18 +5,17 @@ import ir.FunctionData;
 import ir.ProgramData;
 import org.apache.commons.cli.*;
 import parser.IrProgramParser;
-import regalloc.allocator.Allocator;
-import regalloc.factory.GlobalAllocatorFactory;
 import regalloc.factory.IntraBlockAllocatorFactory;
 import regalloc.factory.NaiveAllocatorFactory;
-import regalloc.model.MemoryTable;
 import util.FileGenerator;
 import util.FunctionControlFlow;
 import util.Liveness;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 
 import static java.lang.System.exit;
 

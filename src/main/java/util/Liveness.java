@@ -13,6 +13,7 @@ public class Liveness {
     private final TreeMap<Integer, Set<String>> ins;
     private final List<IRInstruction> instructions;
     private final Set<String> arrayNames;
+    private final Set<String> allVariables;
 
     public Liveness(String functionName, Map<Integer, List<Integer>> cfg, List<IRInstruction> instructions, Set<String> arrayNames) {
         this.functionName = functionName;
@@ -21,8 +22,16 @@ public class Liveness {
         this.arrayNames = arrayNames;
         outs = new TreeMap<>();
         ins = new TreeMap<>();
+        allVariables = new HashSet<>();
         analyse();
+    }
 
+    public Map<String, List<List<Integer>>> getVarLiveRangesMap() {
+        Map<String, List<List<Integer>>> map = new HashMap<>();
+        for (String variable : allVariables) {
+            map.put(variable, getVarLiveRanges(variable));
+        }
+        return map;
     }
 
     public List<List<Integer>> getVarLiveRanges(String var) {
@@ -72,6 +81,8 @@ public class Liveness {
                 //in
                 Set<String> def = getDefinedVars(instructions.get(instructionId));
                 Set<String> use = getUsedVars(instructions.get(instructionId));
+                allVariables.addAll(def);
+                allVariables.addAll(use);
                 int oldSize = ins.get(instructionId).size();
                 HashSet<String> tmp = new HashSet<>(outs.get(instructionId));
                 tmp.removeAll(def);

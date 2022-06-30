@@ -61,12 +61,16 @@ public class InstructionParser {
             return new IRInstruction(line, operation, arguments, InstructionType.GOTO, definedVariables, usedVariables);
         }
         if (isArrayStore(line)) {
-            if (isVar(tokens.get(1)))
+            if (isVar(tokens.get(2)))
                 usedVariables.add(tokens.get(2));
+            if (isVar(tokens.get(1)))
+                usedVariables.add(tokens.get(1));
             return new IRInstruction(line, operation, arguments, InstructionType.ARRAY_STORE, definedVariables, usedVariables);
         }
         if (isArrayLoad(line)) {
             definedVariables.add(tokens.get(0));
+            if (isVar(tokens.get(2)))
+                usedVariables.add(tokens.get(2));
             return new IRInstruction(line, operation, arguments, InstructionType.ARRAY_LOAD, definedVariables, usedVariables);
         }
         return null;

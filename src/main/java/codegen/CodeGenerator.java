@@ -31,10 +31,7 @@ public class CodeGenerator {
     private final static String DECREASE_STACK_POINTER_TEMPLATE = "\taddi $sp, $sp, -%d";
     private final static String GOTO_TEMPLATE = "\tj %s";
     private final static String JAL_TEMPLATE = "\tjal %s";
-
     private final static String REGISTER_TO_REGISTER_MOVE_TEMPLATE = "\tmove %s, %s";
-
-    // float register
     private final static String LOAD_CONSTANT_IN_REGISTER_TEMPLATE_FLOAT = "\tli.s %s, %s";
     private final static String LOAD_VARIABLE_IN_REGISTER_TEMPLATE_FLOAT = "\tl.s %s, %s(%s)";
     private final static String STORE_VARIABLE_FROM_REGISTER_TEMPLATE_FLOAT = "\ts.s %s, %s(%s)";
@@ -44,8 +41,6 @@ public class CodeGenerator {
     private static final String FLOAT_BRANCH_INSTRUCTION = "\t%s, %s, %s";
     private final static String BRANCH_TRUE_FLOAT = "\tbc1t %s";
     private final static String BRANCH_FALSE_FLOAT = "\tbc1f %s";
-
-
     private final static String ZERO_REGISTER = "$zero";
     private final static String SP_REGISTER = "$sp";
     private final static String INTEGER_RETURN_REGISTER = "$v0";
