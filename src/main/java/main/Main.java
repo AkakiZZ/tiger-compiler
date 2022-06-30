@@ -46,7 +46,7 @@ public class Main {
 
         String extension = tigerFilePath.substring(tigerFilePath.lastIndexOf('.'));
 
-        String irFilePath = tigerFilePath.replace(extension, ".ir").replace("tiger", "ir");
+        String irFilePath = cmd.getOptionValue("r");
 
         String mipsFile = tigerFilePath.replace(extension, ".s");
 
@@ -99,19 +99,12 @@ public class Main {
 
         // global allocation
         if (cmd.hasOption("g")) {
-            codeGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new GlobalAllocatorFactory());
+            //codeGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new GlobalAllocatorFactory());
+            // use this for now
+            codeGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new IntraBlockAllocatorFactory());
         }
 
         FileGenerator.generateMipsFile(mipsFile, codeGenerator.generateMips());
-
-        if (cmd.hasOption("mips")) {
-            CodeGenerator naiveAllocationGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new NaiveAllocatorFactory());
-            CodeGenerator intraBlockAllocationGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new IntraBlockAllocatorFactory());
-            CodeGenerator globalAllocationGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new GlobalAllocatorFactory());
-            FileGenerator.generateMipsFile(naiveFile, naiveAllocationGenerator.generateMips());
-            FileGenerator.generateMipsFile(intraBlockFile, intraBlockAllocationGenerator.generateMips());
-            FileGenerator.generateMipsFile(briggsFile, globalAllocationGenerator.generateMips());
-        }
 
         if (cmd.hasOption("cfg")) {
             FileGenerator.generateCfgFile(cfgFile, functionControlFlowList);
@@ -122,5 +115,13 @@ public class Main {
             FileGenerator.generateLivenessFile(livenessFile, livenessObjects);
         }
 
+        if (cmd.hasOption("mips")) {
+            CodeGenerator naiveAllocationGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new NaiveAllocatorFactory());
+            CodeGenerator intraBlockAllocationGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new IntraBlockAllocatorFactory());
+            //CodeGenerator globalAllocationGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new GlobalAllocatorFactory());
+            FileGenerator.generateMipsFile(naiveFile, naiveAllocationGenerator.generateMips());
+            FileGenerator.generateMipsFile(intraBlockFile, intraBlockAllocationGenerator.generateMips());
+            //FileGenerator.generateMipsFile(briggsFile, globalAllocationGenerator.generateMips());
+        }
     }
 }

@@ -514,7 +514,7 @@ public class CodeGenerator {
 
     private List<String> generateCallR(IRInstruction irInstruction, MemoryTable memoryTable, List<String> variablesToSave) {
         List<String> instructions;
-        List<String> arguments = irInstruction.getArguments();
+        List<String> arguments = new ArrayList<>(irInstruction.getArguments());
         String varName = irInstruction.getArguments().get(0);
         String calleeName = irInstruction.getArguments().get(1);
         if (libFunctionLabels.containsKey(calleeName)) {
