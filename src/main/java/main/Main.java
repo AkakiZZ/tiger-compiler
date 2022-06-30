@@ -85,23 +85,23 @@ public class Main {
         }
 
         // default
-        CodeGenerator codeGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new NaiveAllocatorFactory());
+        CodeGenerator codeGenerator = new CodeGenerator(new ProgramData(programData), functionControlFlowList, livenessObjects, new NaiveAllocatorFactory());
 
         // naive allocation
         if (cmd.hasOption("n")) {
-            codeGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new NaiveAllocatorFactory());
+            codeGenerator = new CodeGenerator(new ProgramData(programData), functionControlFlowList, livenessObjects, new NaiveAllocatorFactory());
         }
 
         // intra block allocation
         if (cmd.hasOption("b")) {
-            codeGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new IntraBlockAllocatorFactory());
+            codeGenerator = new CodeGenerator(new ProgramData(programData), functionControlFlowList, livenessObjects, new IntraBlockAllocatorFactory());
         }
 
         // global allocation
         if (cmd.hasOption("g")) {
             //codeGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new GlobalAllocatorFactory());
             // use this for now
-            codeGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new IntraBlockAllocatorFactory());
+            codeGenerator = new CodeGenerator(new ProgramData(programData), functionControlFlowList, livenessObjects, new IntraBlockAllocatorFactory());
         }
 
         FileGenerator.generateMipsFile(mipsFile, codeGenerator.generateMips());
@@ -116,8 +116,8 @@ public class Main {
         }
 
         if (cmd.hasOption("mips")) {
-            CodeGenerator naiveAllocationGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new NaiveAllocatorFactory());
-            CodeGenerator intraBlockAllocationGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new IntraBlockAllocatorFactory());
+            CodeGenerator naiveAllocationGenerator = new CodeGenerator(new ProgramData(programData), functionControlFlowList, livenessObjects, new NaiveAllocatorFactory());
+            CodeGenerator intraBlockAllocationGenerator = new CodeGenerator(new ProgramData(programData), functionControlFlowList, livenessObjects, new IntraBlockAllocatorFactory());
             //CodeGenerator globalAllocationGenerator = new CodeGenerator(programData, functionControlFlowList, livenessObjects, new GlobalAllocatorFactory());
             FileGenerator.generateMipsFile(naiveFile, naiveAllocationGenerator.generateMips());
             FileGenerator.generateMipsFile(intraBlockFile, intraBlockAllocationGenerator.generateMips());

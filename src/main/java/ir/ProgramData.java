@@ -1,14 +1,19 @@
 package ir;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class ProgramData {
     private final Set<String> staticVariables;
     private final HashMap<String, Integer> staticArrays;
     private final Set<String> floatVars;
     private final List<FunctionData> functions;
+
+    public ProgramData (ProgramData programData) {
+        this.staticVariables = new HashSet<>(programData.getStaticVariables());
+        this.staticArrays = new HashMap<>(programData.getStaticArrays());
+        this.floatVars = new HashSet<>(programData.getFloatVars());
+        this.functions = new ArrayList<>(programData.getFunctions());
+    }
 
     public ProgramData(Set<String> staticVariables, HashMap<String, Integer> staticArrays, Set<String> floatVars, List<FunctionData> functions) {
         this.staticVariables = staticVariables;
